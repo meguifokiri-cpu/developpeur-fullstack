@@ -8,7 +8,8 @@ Une application web complète de gestion de tâches (To-Do List) permettant de p
 - **Tri intelligent** :
   - *À faire* : Tri chronologique de la plus proche à la plus lointaine.
   - *Terminées* : Tri chronologique inverse (dernières tâches finies en haut).
-- **systeme d'authentification** : Accès sécurisé via un page de creation de compte et une page de connexion.
+- **systeme d'authentification** : Accès sécurisé via un page de creation de compte et une page de        connexion.
+- **un bouton de deconnexion**
 
 ## 🛠️Technique
 - **Frontend** : Vue.js 3, HTML5, CSS3.
