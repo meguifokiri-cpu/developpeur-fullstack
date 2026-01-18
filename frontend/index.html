@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Expert Task Manager</title>
+    <script src='https://unpkg.com/vue@3/dist/vue.global.js'></script>
+    <style>
+        :root { --todo: #ffc107; --doing: #17a2b8; --done: #28a745; }
+        .container { max-width: 1000px; margin: auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .column { background: #f8f9fa; padding: 15px; border-radius: 12px; min-height: 500px; border: 1px solid #e0e0e0; }
+        .task-card { background: white; padding: 15px; margin-bottom: 12px; border-radius: 8px; border-left: 6px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s; }
+        .task-card:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        .todo { border-left-color: var(--todo); }
+        .doing { border-left-color: var(--doing); }
+        .done { border-left-color: var(--done); opacity: 0.8; }
+        .done-text { text-decoration: line-through; color: #888; }
+        .date-info { font-size: 0.75rem; color: #999; display: block; margin-bottom: 8px; }
+        button { cursor: pointer; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; }
+        .btn-main { background: #444; color: white; padding: 10px 20px; }
+        .input-task { padding: 10px; border-radius: 4px; border: 1px solid #ddd; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <div id='app' class="container">
+        <div v-if="!isLoggedIn" style="text-align:center; margin-top:100px;">
+            <h2>Accès Gestionnaire</h2>
+            <input v-model="auth.username" placeholder="Identifiant" class="input-task">
+            <input v-model="auth.password" type="password" placeholder="Mot de passe" class="input-task">
+            <button @click="login" class="btn-main">Se connecter</button>
+        </div>
+
+        <div v-else>
+            <div style="border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px;">
+                <h1>Gestion de tâches de {{ user.username }}</h1>
+                <div style="display: flex; gap: 10px;">
+                    <input v-model="newTask" @keyup.enter="addTask" placeholder="Quelle est la tâche ?" class="input-task" style="flex: 2;">
+                    <input type="date" v-model="startDateInput" class="input-task" style="flex: 1;">
+                    <button @click="addTask" class="btn-main">Ajouter</button>
+                    <button @click="logout" style="background:#ff4444; color:white; margin-left: auto;">Déconnexion</button>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="column">
+                    <h3>⏳ À faire ({{ todoTasks.length }})</h3>
+                    <div v-for="t in todoTasks" :key="t.id" class="task-card todo">
+                        <span class="date-info">Prévue le : {{ formatDate(t.startDate) }}</span>
+                        <strong>{{ t.title }}</strong> <br><br>
+                        <button @click="updateStatus(t.id, 'doing')" style="background: var(--doing); color: white;">▶ Démarrer</button>
+                        <button @click="deleteTask(t.id)" style="background: #eee;">🗑</button>
+                    </div>
+                </div>
+
+                <div class="column">
+                    <h3>🚧 En cours ({{ doingTasks.length }})</h3>
+                    <div v-for="t in doingTasks" :key="t.id" class="task-card doing">
+                        <span class="date-info">En cours depuis le : {{ formatDate(t.startDate) }}</span>
+                        <strong>{{ t.title }}</strong> <br><br>
+                        <button @click="updateStatus(t.id, 'done')" style="background: var(--done); color: white;">✅ Terminer</button>
+                        <button @click="updateStatus(t.id, 'todo')" style="background: #eee;">⬅ Reculer</button>
+                    </div>
+                </div>
+
+                <div class="column">
+                    <h3>🏁 Terminées ({{ doneTasks.length }})</h3>
+                    <div v-for="t in doneTasks" :key="t.id" class="task-card done">
+                        <span class="date-info">Terminée (Prévue le : {{ formatDate(t.startDate) }})</span>
+                        <strong class="done-text">{{ t.title }}</strong> <br><br>
+                        <button @click="updateStatus(t.id, 'doing')" style="background: #eee;">🔄 Reprendre</button>
+                        <button @click="deleteTask(t.id)" style="background: #ff4444; color: white;">🗑</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        const API_URL = 'http://localhost:8000/api'; 
+
+        createApp({
+            data() {
+                return { 
+                    isLoggedIn: false, 
+                    user: null, 
+                    auth: {username:'', password:''}, 
+                    tasks: [], 
+                    newTask: '',
+                    startDateInput: new Date().toISOString().substr(0, 10)
+                }
+            },
+            computed: {
+                todoTasks() { 
+                    return this.tasks
+                        .filter(t => t.status === 'todo')
+                        .sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
+                },
+                doingTasks() { 
+                    return this.tasks.filter(t => t.status === 'doing');
+                },
+                doneTasks() { 
+                    return this.tasks
+                        .filter(t => t.status === 'done')
+                        .sort((a,b) => new Date(b.startDate) - new Date(a.startDate));
+                }
+            },
+            methods: {
+                formatDate(dateStr) {
+                    if(!dateStr) return "N/A";
+                    const d = new Date(dateStr);
+                    return d.toLocaleDateString('fr-FR');
+                },
+                async login() {
+                    try {
+                        const res = await fetch(`${API_URL}/login`, {
+                            method: 'POST', headers: {'Content-Type':'application/json'},
+                            body: JSON.stringify(this.auth)
+                        });
+                        if(res.ok) { 
+                            this.user = (await res.json()).user; 
+                            this.isLoggedIn = true; 
+                            this.loadTasks(); 
+                        } else { alert("Identifiants incorrects"); }
+                    } catch(e) { alert("Serveur injoignable"); }
+                },
+                async loadTasks() {
+                    const res = await fetch(`${API_URL}/tasks?user_id=${this.user.id}`);
+                    this.tasks = await res.json();
+                },
+                async addTask() {
+                    if(!this.newTask || !this.startDateInput) return;
+                    await fetch(`${API_URL}/tasks`, {
+                        method: 'POST', headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({
+                            title: this.newTask, 
+                            user_id: this.user.id,
+                            startDate: this.startDateInput
+                        })
+                    });
+                    this.newTask = ''; 
+                    this.loadTasks();
+                },
+                async updateStatus(id, status) {
+                    await fetch(`${API_URL}/tasks/${id}`, {
+                        method: 'PUT', headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({status})
+                    });
+                    this.loadTasks();
+                },
+                async deleteTask(id) {
+                    if(confirm("Supprimer cette tâche ?")) {
+                        await fetch(`${API_URL}/tasks/${id}`, { method: 'DELETE' });
+                        this.loadTasks();
+                    }
+                },
+                logout() { 
+                    this.isLoggedIn = false; 
+                    this.user = null;
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
