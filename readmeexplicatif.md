@@ -8,7 +8,7 @@ Une application web complète de gestion de tâches (To-Do List) permettant de p
 - **Tri intelligent** :
   - *À faire* : Tri chronologique de la plus proche à la plus lointaine.
   - *Terminées* : Tri chronologique inverse (dernières tâches finies en haut).
-- **Authentification simplifiée** : Accès sécurisé via un compte prédéfini.
+- **systeme d'authentification** : Accès sécurisé via un page de creation de compte et une page de connexion.
 
 ## 🛠️Technique
 - **Frontend** : Vue.js 3, HTML5, CSS3.
@@ -16,8 +16,8 @@ Une application web complète de gestion de tâches (To-Do List) permettant de p
 - **Base de données** : MySQL.
 - **Conteneurisation** : Docker.
 
-## 🔐 Authentification (Accès)
+<!-- ## 🔐 Authentification (Accès)
 Pour ce projet, je n'ai pas pu mettre la page d'inscription. Un compte administrateur a été configuré directement dans la base de données :
 - **Identifiant** : `admin`
-- **Mot de passe** : `1234`
+- **Mot de passe** : `1234` --> ( c'est fait)
 

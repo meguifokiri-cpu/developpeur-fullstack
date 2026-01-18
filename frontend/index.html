@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Expert Task Manager</title>
+    <title>app todo-list</title>
     <script src='https://unpkg.com/vue@3/dist/vue.global.js'></script>
     <style>
         :root { --todo: #ffc107; --doing: #17a2b8; --done: #28a745; }
@@ -22,59 +22,68 @@
     </style>
 </head>
 <body>
-    <div id='app' class="container">
+    <div id="app" class="container">
         <div v-if="!isLoggedIn" style="text-align:center; margin-top:100px;">
-            <h2>Accès Gestionnaire</h2>
-            <input v-model="auth.username" placeholder="Identifiant" class="input-task">
-            <input v-model="auth.password" type="password" placeholder="Mot de passe" class="input-task">
-            <button @click="login" class="btn-main">Se connecter</button>
+            <h2>{{ isRegistering ? 'Créer un compte' : 'Accès Gestionnaire' }}</h2>
+            
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <input v-model="auth.username" placeholder="Identifiant" class="input-task">
+                <input v-model="auth.password" type="password" placeholder="Mot de passe" class="input-task">
+                
+                <button v-if="!isRegistering" @click="login" class="btn-main">Se connecter</button>
+                <button v-else @click="register" class="btn-main" style="background: var(--done);">S'inscrire</button>
+                
+                <a href="#" @click.prevent="isRegistering = !isRegistering" style="font-size: 0.9rem; color: #666;">
+                    {{ isRegistering ? 'Déjà un compte ? Se connecter' : 'Pas de compte ? Créer une session' }}
+                </a>
+            </div>
         </div>
 
-        <div v-else>
-            <div style="border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px;">
-                <h1>Gestion de tâches de {{ user.username }}</h1>
-                <div style="display: flex; gap: 10px;">
-                    <input v-model="newTask" @keyup.enter="addTask" placeholder="Quelle est la tâche ?" class="input-task" style="flex: 2;">
-                    <input type="date" v-model="startDateInput" class="input-task" style="flex: 1;">
-                    <button @click="addTask" class="btn-main">Ajouter</button>
-                    <button @click="logout" style="background:#ff4444; color:white; margin-left: auto;">Déconnexion</button>
-                </div>
-            </div>
-
-            <div class="grid">
-                <div class="column">
-                    <h3>⏳ À faire ({{ todoTasks.length }})</h3>
-                    <div v-for="t in todoTasks" :key="t.id" class="task-card todo">
-                        <span class="date-info">Prévue le : {{ formatDate(t.startDate) }}</span>
-                        <strong>{{ t.title }}</strong> <br><br>
-                        <button @click="updateStatus(t.id, 'doing')" style="background: var(--doing); color: white;">▶ Démarrer</button>
-                        <button @click="deleteTask(t.id)" style="background: #eee;">🗑</button>
+            <div v-else>
+                <div style="border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px;">
+                    <h1>Gestion de tâches de {{ user.username }}</h1>
+                    <div style="display: flex; gap: 10px;">
+                        <input v-model="newTask" @keyup.enter="addTask" placeholder="Quelle est la tâche ?" class="input-task" style="flex: 2;">
+                        <input type="date" v-model="startDateInput" class="input-task" style="flex: 1;">
+                        <button @click="addTask" class="btn-main">Ajouter</button>
+                        <button @click="logout" style="background:#ff4444; color:white; margin-left: auto;">Déconnexion</button>
                     </div>
                 </div>
 
-                <div class="column">
-                    <h3>🚧 En cours ({{ doingTasks.length }})</h3>
-                    <div v-for="t in doingTasks" :key="t.id" class="task-card doing">
-                        <span class="date-info">En cours depuis le : {{ formatDate(t.startDate) }}</span>
-                        <strong>{{ t.title }}</strong> <br><br>
-                        <button @click="updateStatus(t.id, 'done')" style="background: var(--done); color: white;">✅ Terminer</button>
-                        <button @click="updateStatus(t.id, 'todo')" style="background: #eee;">⬅ Reculer</button>
+                <div class="grid">
+                    <div class="column">
+                        <h3>⏳ À faire ({{ todoTasks.length }})</h3>
+                        <div v-for="t in todoTasks" :key="t.id" class="task-card todo">
+                            <span class="date-info">Prévue le : {{ formatDate(t.startDate) }}</span>
+                            <strong>{{ t.title }}</strong> <br><br>
+                            <button @click="updateStatus(t.id, 'doing')" style="background: var(--doing); color: white;">▶ Démarrer</button>
+                            <button @click="deleteTask(t.id)" style="background: #eee;">🗑</button>
+                        </div>
                     </div>
-                </div>
 
-                <div class="column">
-                    <h3>🏁 Terminées ({{ doneTasks.length }})</h3>
-                    <div v-for="t in doneTasks" :key="t.id" class="task-card done">
-                        <span class="date-info">Terminée (Prévue le : {{ formatDate(t.startDate) }})</span>
-                        <strong class="done-text">{{ t.title }}</strong> <br><br>
-                        <button @click="updateStatus(t.id, 'doing')" style="background: #eee;">🔄 Reprendre</button>
-                        <button @click="deleteTask(t.id)" style="background: #ff4444; color: white;">🗑</button>
+                    <div class="column">
+                        <h3>🚧 En cours ({{ doingTasks.length }})</h3>
+                        <div v-for="t in doingTasks" :key="t.id" class="task-card doing">
+                            <span class="date-info">En cours depuis le : {{ formatDate(t.startDate) }}</span>
+                            <strong>{{ t.title }}</strong> <br><br>
+                            <button @click="updateStatus(t.id, 'done')" style="background: var(--done); color: white;">✅ Terminer</button>
+                            <button @click="updateStatus(t.id, 'todo')" style="background: #eee;">⬅ Reculer</button>
+                        </div>
+                    </div>
+
+                    <div class="column">
+                        <h3>🏁 Terminées ({{ doneTasks.length }})</h3>
+                        <div v-for="t in doneTasks" :key="t.id" class="task-card done">
+                            <span class="date-info">Terminée (Prévue le : {{ formatDate(t.startDate) }})</span>
+                            <strong class="done-text">{{ t.title }}</strong> <br><br>
+                            <button @click="updateStatus(t.id, 'doing')" style="background: #eee;">🔄 Reprendre</button>
+                            <button @click="deleteTask(t.id)" style="background: #ff4444; color: white;">🗑</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
     <script>
         const { createApp } = Vue;
         const API_URL = 'http://localhost:8000/api'; 
@@ -83,6 +92,7 @@
             data() {
                 return { 
                     isLoggedIn: false, 
+                    isRegistering: false, 
                     user: null, 
                     auth: {username:'', password:''}, 
                     tasks: [], 
@@ -110,6 +120,24 @@
                     if(!dateStr) return "N/A";
                     const d = new Date(dateStr);
                     return d.toLocaleDateString('fr-FR');
+                },
+                async register() {
+                    if(!this.auth.username || !this.auth.password) return alert("Remplissez tous les champs");
+                    try {
+                        const res = await fetch(`${API_URL}/register`, {
+                            method: 'POST',
+                            headers: {'Content-Type':'application/json'},
+                            body: JSON.stringify(this.auth)
+                        });
+                        const data = await res.json();
+                        if(res.ok) {
+                            alert("Compte créé avec succès ! Connectez-vous.");
+                            this.isRegistering = false; // Retour à l'écran de login
+                            this.auth.password = ''; // Efface le mdp par sécurité
+                        } else {
+                            alert(data.message);
+                        }
+                    } catch(e) { alert("Serveur injoignable"); }
                 },
                 async login() {
                     try {

@@ -37,6 +37,20 @@ def init_db():
     c.commit()
     c.close()
 
+@app.route('/api/register', methods=['POST'])
+def register():
+    try:
+        d = request.json
+        c = db()
+        cur = c.cursor()
+        # On vérifie si l'utilisateur existe déjà
+        cur.execute('INSERT INTO users (username, password) VALUES (%s, %s)', (d['username'], d['password']))
+        c.commit()
+        c.close()
+        return jsonify({'ok': True, 'message': 'Utilisateur créé !'}), 201
+    except mysql.connector.Error as err:
+        return jsonify({'ok': False, 'message': 'Cet identifiant est déjà pris'}), 400
+
 @app.route('/api/login', methods=['POST'])
 def login():
     d = request.json
